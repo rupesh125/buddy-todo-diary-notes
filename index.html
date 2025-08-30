@@ -1,125 +1,67 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Buddy — ToDo • Diary • Notes (Multi-user)</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="style.css">
-<!-- Firebase (compat) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buddy Project</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="topbar">
-  <div class="brand">Buddy</div>
-  <div class="user-area" id="userArea">
-    <button id="signInBtn" class="btn">Sign in with Google</button>
+  <h1>📒 Buddy Notes + ToDo + Diary</h1>
+
+  <!-- Google Sign-in -->
+  <button id="googleLogin">Sign in with Google</button>
+  <button id="logoutBtn" style="display:none;">Logout</button>
+
+  <div id="app" style="display:none;">
+
+    <!-- ToDo Section -->
+    <section>
+      <h2>✅ ToDo</h2>
+      <input type="text" id="todoInput" placeholder="Add a task">
+      <button onclick="addTodo()">Add</button>
+      <ul id="activeTodos"></ul>
+      <h3>Completed</h3>
+      <ul id="completedTodos"></ul>
+    </section>
+
+    <!-- Diary Section -->
+    <section>
+      <h2>📔 Diary</h2>
+      <select id="diaryDate" onchange="loadDiaryEntry()"></select>
+      <textarea id="diaryText" placeholder="Write your diary entry..."></textarea>
+      <button onclick="saveDiaryEntry()">Save Entry</button>
+    </section>
+
+    <!-- Notes Section -->
+    <section>
+      <h2>📝 Notes</h2>
+      <button onclick="toggleSidebar()">📚 Toggle Books</button>
+      <div class="notes-container">
+        <div id="bookSidebar">
+          <h3>Books</h3>
+          <ul id="bookList"></ul>
+          <input type="text" id="bookInput" placeholder="Add Book">
+          <button onclick="addBook()">Add Book</button>
+        </div>
+        <div id="noteArea">
+          <h3 id="currentBook">No Book Selected</h3>
+          <ul id="chapterList"></ul>
+          <input type="text" id="chapterInput" placeholder="Add Chapter">
+          <button onclick="addChapter()">Add Chapter</button>
+          <textarea id="noteText" placeholder="Write notes here..."></textarea>
+          <button onclick="saveNote()">Save Note</button>
+        </div>
+      </div>
+    </section>
   </div>
-</header>
 
-<main class="layout" id="app" aria-hidden="true">
-  <nav class="main-tabs">
-    <button class="m-tab active" data-tab="todo">To-Do</button>
-    <button class="m-tab" data-tab="diary">Diary</button>
-    <button class="m-tab" data-tab="notes">Notes</button>
-  </nav>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-  <!-- To-Do -->
-  <section id="todo" class="panel active">
-    <div class="panel-head">
-      <h2>To-Do</h2>
-      <div class="controls">
-        <div class="segmented">
-          <button id="btnDaily" class="seg active">Daily</button>
-          <button id="btnAdditional" class="seg">Additional</button>
-        </div>
-        <button id="btnOpenAdd" class="btn primary">+ Add</button>
-      </div>
-    </div>
-
-    <div id="tasksWrap" class="tasksWrap">
-      <div id="activeTasks" class="tasksCol">
-        <h3>Active</h3><div id="activeList"></div>
-      </div>
-      <div id="completedTasks" class="tasksCol">
-        <h3>Completed</h3><div id="completedList"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Diary -->
-  <section id="diary" class="panel">
-    <div class="panel-head">
-      <h2>Diary</h2>
-      <div class="controls">
-        <input type="date" id="diaryDate">
-        <button id="diarySave" class="btn primary">Save</button>
-      </div>
-    </div>
-    <div class="diaryMain">
-      <aside id="calWrap" class="calWrap"></aside>
-      <div class="diaryEditorWrap">
-        <div class="editor-toolbar">
-          <button data-cmd="bold" class="btn">B</button>
-          <button data-cmd="italic" class="btn">I</button>
-          <button data-cmd="insertUnorderedList" class="btn">• List</button>
-          <button data-cmd="insertOrderedList" class="btn">1. List</button>
-        </div>
-        <div id="diaryEditor" class="editor" contenteditable="true" placeholder="Write or paste notes here..."></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Notes -->
-  <section id="notes" class="panel">
-    <div class="panel-head">
-      <h2>Notes</h2>
-      <div class="controls">
-        <input id="newBookName" placeholder="New book name"><button id="createBook" class="btn">Create Book</button>
-      </div>
-    </div>
-    <div class="notesMain">
-      <aside class="booksPane"><div id="booksList"></div></aside>
-      <div class="chaptersPane">
-        <div class="chaptersHeader">
-          <input id="newChapterTitle" placeholder="New chapter title"><button id="createChapter" class="btn">Add Chapter</button>
-        </div>
-        <div id="chaptersList" class="chaptersList"></div>
-        <div class="noteEditorArea">
-          <div class="editor-toolbar">
-            <button data-cmd="bold" class="btn">B</button>
-            <button data-cmd="italic" class="btn">I</button>
-            <button data-cmd="insertUnorderedList" class="btn">•</button>
-          </div>
-          <div id="noteEditor" class="editor" contenteditable="true" placeholder="Write or paste notes here..."></div>
-          <div class="noteActions"><button id="saveNote" class="btn primary">Save Note</button></div>
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
-
-<!-- Add Task Modal -->
-<div id="taskModal" class="modal hidden">
-  <div class="modalCard">
-    <h3>Add / Edit Task</h3>
-    <input id="mTitle" placeholder="Title">
-    <input id="mDate" type="date">
-    <input id="mTime" type="time">
-    <select id="mType"><option value="daily">Daily</option><option value="additional">Additional</option></select>
-    <select id="mPriority"><option>Low</option><option selected>Medium</option><option>High</option></select>
-    <input id="mTags" placeholder="comma separated tags">
-    <div class="modalActions">
-      <button id="mCancel" class="btn">Cancel</button>
-      <button id="mSave" class="btn primary">Save</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast" class="toast hidden"></div>
-
-<script src="app.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
